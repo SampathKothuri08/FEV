@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<many2many_relations>
+
+    <!-- Node-Link Diagram Relationships -->
+    <many2many>
+        <label1>Node-Link Diagram</label1>
+        <label2>Graph Connectivity</label2>
+    </many2many>
+    <many2many>
+        <label1>Node-Link Diagram</label1>
+        <label2>Shortest Path Analysis</label2>
+    </many2many>
+    <many2many>
+        <label1>Node-Link Diagram</label1>
+        <label2>Network Flow</label2>
+    </many2many>
+
+    <!-- Scatter Plot Relationships -->
+    <many2many>
+        <label1>Scatter Plot</label1>
+        <label2>Data Distribution</label2>
+    </many2many>
+    <many2many>
+        <label1>Scatter Plot</label1>
+        <label2>Correlation Analysis</label2>
+    </many2many>
+    <many2many>
+        <label1>Scatter Plot</label1>
+        <label2>Outlier Detection</label2>
+    </many2many>
+
+    <!-- Tree Map Relationships -->
+    <many2many>
+        <label1>Tree Map</label1>
+        <label2>Hierarchical Data</label2>
+    </many2many>
+    <many2many>
+        <label1>Tree Map</label1>
+        <label2>Proportional Area Representation</label2>
+    </many2many>
+
+    <!-- Pie Chart Relationships -->
+    <many2many>
+        <label1>Pie Chart</label1>
+        <label2>Percentage Distribution</label2>
+    </many2many>
+    <many2many>
+        <label1>Pie Chart</label1>
+        <label2>Category Comparison</label2>
+    </many2many>
+
+    <!-- Bar Chart Relationships -->
+    <many2many>
+        <label1>Bar Chart</label1>
+        <label2>Comparative Analysis</label2>
+    </many2many>
+    <many2many>
+        <label1>Bar Chart</label1>
+        <label2>Trend Analysis</label2>
+    </many2many>
+
+    <!-- Line Chart Relationships -->
+    <many2many>
+        <label1>Line Chart</label1>
+        <label2>Trend Over Time</label2>
+    </many2many>
+    <many2many>
+        <label1>Line Chart</label1>
+        <label2>Peak and Trough Analysis</label2>
+    </many2many>
+
+    <!-- Heat Map Relationships -->
+    <many2many>
+        <label1>Heat Map</label1>
+        <label2>Density Representation</label2>
+    </many2many>
+    <many2many>
+        <label1>Heat Map</label1>
+        <label2>Cluster Analysis</label2>
+    </many2many>
+
+    <!-- GMap Relationships -->
+    <many2many>
+        <label1>GMap</label1>
+        <label2>Geospatial Data</label2>
+    </many2many>
+    <many2many>
+        <label1>GMap</label1>
+        <label2>Region-Based Analysis</label2>
+    </many2many>
+
+</many2many_relations>

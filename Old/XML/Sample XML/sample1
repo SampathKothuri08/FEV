@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--Sample XML data file for Evaluation Tool-->
+<evaluation>
+	<head>
+		<title>Sample evaluation</title>
+		<type>Evaluating Enviroments and Work Practices</type>
+		<tools>none</tools> 
+		<Numquestions>3</NumQuestions>
+	</head>
+	<body> </body>
+
+</evaluation>
