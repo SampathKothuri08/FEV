@@ -9,20 +9,21 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class input extends javax.swing.JFrame {
-    private JComboBox<String> scenarioDropdown, visualizationDropdown;
-    private JComboBox<String> evaluationDropdown;
+public class input extends JFrame {
+    private JComboBox<String> scenarioDropdown, visualizationDropdown, evaluationDropdown;
     private JTable questionTable;
     private DefaultTableModel tableModel;
-    private JButton fetchButton, submitButton;
-    private Querying querying;
+    private JButton fetchButton, submitButton, uploadImageButton;
+    private JLabel imageLabel, imagePathLabel;
 
+    private Querying querying;
     private HashMap<String, Integer> scenarioMap = new HashMap<>();
 
     public input() {
@@ -31,49 +32,71 @@ public class input extends javax.swing.JFrame {
 
     private void initComponents() {
         setTitle("Evaluation System");
-        setSize(850, 600);
+        setSize(1000, 700);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
         querying = new Querying(new MySQLconnectivity());
 
-        JPanel selectionPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        JPanel selectionPanel = new JPanel();
+        selectionPanel.setLayout(new BoxLayout(selectionPanel, BoxLayout.Y_AXIS));
         selectionPanel.setBorder(BorderFactory.createTitledBorder("Select Evaluation"));
 
         scenarioDropdown = new JComboBox<>();
         visualizationDropdown = new JComboBox<>();
         evaluationDropdown = new JComboBox<>();
 
-        selectionPanel.add(new JLabel("Select Scenario:"));
-        selectionPanel.add(scenarioDropdown);
-        selectionPanel.add(new JLabel("Select Visualization Tool:"));
-        selectionPanel.add(visualizationDropdown);
-        selectionPanel.add(new JLabel("Evaluation:"));
-        selectionPanel.add(evaluationDropdown);
+        imageLabel = new JLabel();
+        imageLabel.setPreferredSize(new Dimension(500, 300));
+        imagePathLabel = new JLabel();
+
+        uploadImageButton = new JButton("Choose Image");
+        uploadImageButton.addActionListener(this::chooseImage);
+
+        selectionPanel.add(createLabeledRow("Select Scenario:", scenarioDropdown));
+        selectionPanel.add(Box.createVerticalStrut(5));
+        selectionPanel.add(createLabeledRow("Select Visualization Tool:", visualizationDropdown));
+        selectionPanel.add(Box.createVerticalStrut(5));
+        selectionPanel.add(createLabeledRow("Evaluation:", evaluationDropdown));
+        selectionPanel.add(Box.createVerticalStrut(10));
+
+        selectionPanel.add(new JLabel("Visualization Preview:"));
+        selectionPanel.add(imageLabel);
+        selectionPanel.add(uploadImageButton);
+        selectionPanel.add(imagePathLabel);
 
         fetchButton = new JButton("Fetch Questions");
         fetchButton.addActionListener(this::fetchQuestions);
 
-        String[] columnNames = {"Question ID", "Question", "Type", "Response"};
-        tableModel = new DefaultTableModel(columnNames, 0);
-        questionTable = new JTable(tableModel);
-        JScrollPane tableScrollPane = new JScrollPane(questionTable);
-
         submitButton = new JButton("Submit Responses");
         submitButton.addActionListener(this::submitResponses);
 
+        String[] columnNames = {"Question ID", "Question", "Type", "Response"};
+        tableModel = new DefaultTableModel(columnNames, 0);
+        questionTable = new JTable(tableModel);
+        questionTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        JScrollPane tableScrollPane = new JScrollPane(questionTable);
+
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        bottomPanel.add(fetchButton);
+        bottomPanel.add(submitButton);
+
         add(selectionPanel, BorderLayout.NORTH);
         add(tableScrollPane, BorderLayout.CENTER);
-
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(fetchButton, BorderLayout.WEST);
-        bottomPanel.add(submitButton, BorderLayout.EAST);
         add(bottomPanel, BorderLayout.SOUTH);
 
         scenarioDropdown.addActionListener(e -> loadEvaluations());
         visualizationDropdown.addActionListener(e -> loadEvaluations());
 
         loadDropdownData();
+    }
+
+    private JPanel createLabeledRow(String labelText, JComponent component) {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        panel.add(new JLabel(labelText), BorderLayout.WEST);
+        panel.add(component, BorderLayout.CENTER);
+        return panel;
     }
 
     private void loadDropdownData() {
@@ -101,7 +124,7 @@ public class input extends javax.swing.JFrame {
             }
 
         } catch (Exception e) {
-            System.out.println(" Error loading dropdowns: " + e.getMessage());
+            System.out.println("Error loading dropdowns: " + e.getMessage());
         }
     }
 
@@ -158,6 +181,19 @@ public class input extends javax.swing.JFrame {
         JOptionPane.showMessageDialog(this, "Questions loaded successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    private void chooseImage(ActionEvent evt) {
+        JFileChooser chooser = new JFileChooser();
+        int result = chooser.showOpenDialog(this);
+
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = chooser.getSelectedFile();
+            imagePathLabel.setText("Selected: " + selectedFile.getName());
+            ImageIcon icon = new ImageIcon(selectedFile.getAbsolutePath());
+            Image scaled = icon.getImage().getScaledInstance(500, 300, Image.SCALE_SMOOTH);
+            imageLabel.setIcon(new ImageIcon(scaled));
+        }
+    }
+
     private void submitResponses(ActionEvent evt) {
         if (questionTable.isEditing()) {
             questionTable.getCellEditor().stopCellEditing();
@@ -183,7 +219,8 @@ public class input extends javax.swing.JFrame {
                 return;
             }
 
-            querying.storeResponse(evaluationId, questionId, userId, responseText);
+            String scenarioName = (String) scenarioDropdown.getSelectedItem();
+            querying.storeResponse(evaluationId, questionId, userId, responseText, scenarioName);
         }
 
         JOptionPane.showMessageDialog(this, "Responses Submitted Successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);

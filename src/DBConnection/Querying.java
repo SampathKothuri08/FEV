@@ -62,8 +62,8 @@ public class Querying {
     }
 
 
-    public void storeResponse(int evaluationId, int questionId, int userId, String responseText) {
-        String insertQuery = "INSERT INTO responses (evaluation_id, question_id, user_id, response_text) VALUES (?, ?, ?, ?)";
+    public void storeResponse(int evaluationId, int questionId, int userId, String scenarioName, String responseText) {
+        String insertQuery = "INSERT INTO responses (evaluation_id, question_id, user_id, scenario_name, response_text) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = mySQLConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(insertQuery)) {
@@ -71,11 +71,12 @@ public class Querying {
             pstmt.setInt(1, evaluationId);
             pstmt.setInt(2, questionId);
             pstmt.setInt(3, userId);
-            pstmt.setString(4, responseText);
+            pstmt.setString(4, scenarioName);
+            pstmt.setString(5, responseText);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
-                System.out.println(" Response stored successfully!");
+                System.out.println("Response stored successfully!");
             } else {
                 System.out.println(" No response inserted.");
             }

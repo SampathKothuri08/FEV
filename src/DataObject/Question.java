@@ -3,7 +3,7 @@ package DataObject;
 /**
  * This class encapsulates all of the information needed for an evaluation question.
  * Created by the DB Manager class after a DB query.
- *
+ * <p>
  * Only getter methods, since fields should not be modified after creation.
  */
 public class Question {
