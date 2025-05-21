@@ -1,6 +1,10 @@
 package GUI;
 
 import DBConnection.MySQLconnectivity;
+import evaluation.tool.AIQuestionGenerator;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import DBConnection.Querying;
 import DataObject.EvalObject;
 import DataObject.Question;
@@ -38,6 +42,7 @@ public class input extends JFrame {
 
         querying = new Querying(new MySQLconnectivity());
 
+        // Dropdown Panel
         JPanel selectionPanel = new JPanel();
         selectionPanel.setLayout(new BoxLayout(selectionPanel, BoxLayout.Y_AXIS));
         selectionPanel.setBorder(BorderFactory.createTitledBorder("Select Evaluation"));
@@ -46,13 +51,6 @@ public class input extends JFrame {
         visualizationDropdown = new JComboBox<>();
         evaluationDropdown = new JComboBox<>();
 
-        imageLabel = new JLabel();
-        imageLabel.setPreferredSize(new Dimension(500, 300));
-        imagePathLabel = new JLabel();
-
-        uploadImageButton = new JButton("Choose Image");
-        uploadImageButton.addActionListener(this::chooseImage);
-
         selectionPanel.add(createLabeledRow("Select Scenario:", scenarioDropdown));
         selectionPanel.add(Box.createVerticalStrut(5));
         selectionPanel.add(createLabeledRow("Select Visualization Tool:", visualizationDropdown));
@@ -60,27 +58,39 @@ public class input extends JFrame {
         selectionPanel.add(createLabeledRow("Evaluation:", evaluationDropdown));
         selectionPanel.add(Box.createVerticalStrut(10));
 
+        // Image Section
+        imageLabel = new JLabel();
+        imageLabel.setPreferredSize(new Dimension(500, 300));
+        imagePathLabel = new JLabel();
+
+        uploadImageButton = new JButton("Choose Image");
+        uploadImageButton.addActionListener(this::chooseImage);
+
         selectionPanel.add(new JLabel("Visualization Preview:"));
         selectionPanel.add(imageLabel);
         selectionPanel.add(uploadImageButton);
         selectionPanel.add(imagePathLabel);
 
+        // Buttons
         fetchButton = new JButton("Fetch Questions");
         fetchButton.addActionListener(this::fetchQuestions);
 
         submitButton = new JButton("Submit Responses");
         submitButton.addActionListener(this::submitResponses);
 
+        // Question Table
         String[] columnNames = {"Question ID", "Question", "Type", "Response"};
         tableModel = new DefaultTableModel(columnNames, 0);
         questionTable = new JTable(tableModel);
         questionTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         JScrollPane tableScrollPane = new JScrollPane(questionTable);
 
+        // Bottom Panel
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         bottomPanel.add(fetchButton);
         bottomPanel.add(submitButton);
 
+        // Add to Frame
         add(selectionPanel, BorderLayout.NORTH);
         add(tableScrollPane, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
@@ -157,28 +167,49 @@ public class input extends JFrame {
 
     private void fetchQuestions(ActionEvent evt) {
         String selectedScenario = (String) scenarioDropdown.getSelectedItem();
-        String evaluationName = (String) evaluationDropdown.getSelectedItem();
+        String selectedTool = (String) visualizationDropdown.getSelectedItem();
 
-        if (evaluationName == null || evaluationName.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please select an evaluation!", "Warning", JOptionPane.WARNING_MESSAGE);
+        if (selectedScenario == null || selectedTool == null) {
+            JOptionPane.showMessageDialog(this, "Please select a scenario and tool!", "Warning", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        int evaluationId = querying.getEvaluationIdFromDB(evaluationName);
-        if (evaluationId == -1) {
-            JOptionPane.showMessageDialog(this, "No evaluation found with this name.", "Error", JOptionPane.ERROR_MESSAGE);
+        // Call AI API
+        String response = AIQuestionGenerator.getQuestionsFromAI(selectedScenario, selectedTool);
+
+        if (response == null || response.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Failed to fetch questions from AI.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        EvalObject eval = new EvalObject("Evaluation", selectedScenario, new ArrayList<>(), new HashMap<>());
-        eval = querying.executeQuery(evaluationId, eval);
+        try {
+            JSONObject outer = new JSONObject(response);
+            String content = outer
+                    .getJSONArray("choices")
+                    .getJSONObject(0)
+                    .getJSONObject("message")
+                    .getString("content")
+                    .trim();
 
-        tableModel.setRowCount(0);
-        for (Question q : eval.getQuestions()) {
-            tableModel.addRow(new Object[]{q.getQuestionId(), q.getQuestionText(), q.getQuestionType(), ""});
+            if (content.startsWith("```json")) content = content.replace("```json", "").trim();
+            if (content.endsWith("```")) content = content.substring(0, content.length() - 3).trim();
+
+            JSONArray questions = new JSONArray(content);
+            tableModel.setRowCount(0);
+
+            for (int i = 0; i < questions.length(); i++) {
+                JSONObject qObj = questions.getJSONObject(i);
+                String qText = qObj.optString("questionText", "Missing question");
+                String qType = qObj.optString("questionType", "Unknown");
+                tableModel.addRow(new Object[]{i + 1, qText, qType, ""});
+            }
+
+            JOptionPane.showMessageDialog(this, " AI-generated questions loaded!", "Success", JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, " Error parsing AI response.\nCheck console for details.", "Error", JOptionPane.ERROR_MESSAGE);
         }
-
-        JOptionPane.showMessageDialog(this, "Questions loaded successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void chooseImage(ActionEvent evt) {
@@ -188,6 +219,7 @@ public class input extends JFrame {
         if (result == JFileChooser.APPROVE_OPTION) {
             File selectedFile = chooser.getSelectedFile();
             imagePathLabel.setText("Selected: " + selectedFile.getName());
+
             ImageIcon icon = new ImageIcon(selectedFile.getAbsolutePath());
             Image scaled = icon.getImage().getScaledInstance(500, 300, Image.SCALE_SMOOTH);
             imageLabel.setIcon(new ImageIcon(scaled));
@@ -220,7 +252,7 @@ public class input extends JFrame {
             }
 
             String scenarioName = (String) scenarioDropdown.getSelectedItem();
-            querying.storeResponse(evaluationId, questionId, userId, responseText, scenarioName);
+            querying.storeResponse(evaluationId, questionId, userId, scenarioName, responseText);
         }
 
         JOptionPane.showMessageDialog(this, "Responses Submitted Successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
